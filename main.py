@@ -1,5 +1,5 @@
 """
-Suppose you go on a vacation, take hundreds or thousands of pictures,
+Suppose you go on a vacation, take hundreds of pictures,
 and you'd like to create some html web pages with the best pictures.
 It would be nice if you could easily navigate the web pages from day to day.
 Maybe even an create an introduction / index page with all your vacation days.
@@ -61,6 +61,7 @@ is trivial since those captions have both the correct (home) and incorrect (vaca
 import csv
 import datetime
 import exifread
+
 # pip install exifread
 import glob
 import os
@@ -68,44 +69,48 @@ import os
 from collections import namedtuple
 from operator import itemgetter
 
-BASEFOLDER = '~//2021//switzerland//'
+BASEFOLDER = "~//2021//switzerland//"
 
-LOCATION = BASEFOLDER.split('//')[3].capitalize()
-TITLE = LOCATION + ' ' + BASEFOLDER.split('//')[2]
-CSVFILE = BASEFOLDER + 'tripreport.csv'
-HOME = 'California'
+LOCATION = BASEFOLDER.split("//")[3].capitalize()
+TITLE = LOCATION + " " + BASEFOLDER.split("//")[2]
+CSVFILE = BASEFOLDER + "tripreport.csv"
+HOME = "California"
 OVERWRITE = 1
 VACATIONOFFSET = -8
 
 
 def tablestart(html):
     html.write('<table border="0" width="100%">\n')
-    html.write('<tbody>\n')
-    html.write('<tr>\n')
+    html.write("<tbody>\n")
+    html.write("<tr>\n")
     return
 
 
 def tableend(html):
-    html.write('</tr>\n')
-    html.write('</tbody>\n')
-    html.write('</table>\n')
+    html.write("</tr>\n")
+    html.write("</tbody>\n")
+    html.write("</table>\n")
     return
 
 
 def longdate(yyyymmdd):
-    return '{}'.format((datetime.datetime.strptime(yyyymmdd, '%Y%m%d')).strftime("%A %B %e, %Y"))
+    return "{}".format(
+        (datetime.datetime.strptime(yyyymmdd, "%Y%m%d")).strftime("%A %B %e, %Y")
+    )
 
 
 def header(html, headertitle):
     html.write('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">\n')
-    html.write('<html>\n')
-    html.write('<head>\n')
+    html.write("<html>\n")
+    html.write("<head>\n")
     html.write(
         '<meta http-equiv="Content-Type" content="text/html; charset=windows-1252"><title>{}</title>\n'.format(
-            headertitle))
+            headertitle
+        )
+    )
     html.write('<link rel="stylesheet" href="../../dusty.css" type="text/css">\n')
-    html.write('</head>\n')
-    html.write('<body>\n')
+    html.write("</head>\n")
+    html.write("<body>\n")
     tablestart(html)
     html.write('<td width="33%"><a href="../../index.html">home</a></td>\n')
     html.write('<td width="34%"><h1>{}</h1></td>\n'.format(headertitle))
@@ -114,8 +119,8 @@ def header(html, headertitle):
 
 
 def footer(html):
-    html.write('</body>\n')
-    html.write('</html>\n')
+    html.write("</body>\n")
+    html.write("</html>\n")
 
 
 def navigation(html, index, lastday, navday, daytuple):
@@ -124,20 +129,22 @@ def navigation(html, index, lastday, navday, daytuple):
     if not index:
         if min(trip) == navday:
             html.write('<a href="index.html">Previous</a><br>\n')
-            html.write('Introduction')
+            html.write("Introduction")
         else:
-            html.write('<a href="{}.html">Previous</a><br>\n'.format(daytuple.previousday))
-            html.write('{}<br>\n'.format(longdate(daytuple.previousday)))
-            html.write('{}'.format(daytuple.previouslocation))
-    html.write('</h5><td>\n')
+            html.write(
+                '<a href="{}.html">Previous</a><br>\n'.format(daytuple.previousday)
+            )
+            html.write("{}<br>\n".format(longdate(daytuple.previousday)))
+            html.write("{}".format(daytuple.previouslocation))
+    html.write("</h5><td>\n")
     if index:
-        localday = ''
-        localtitle = 'Introduction'
+        localday = ""
+        localtitle = "Introduction"
     else:
         localday = longdate(navday)
         localtitle = daytuple.location
     html.write('<td width="34%"><h2>{}<br>\n'.format(localday))
-    html.write('{}</h2></td>\n'.format(localtitle))
+    html.write("{}</h2></td>\n".format(localtitle))
     html.write('<td width="33%"><h6>')
     if index:
         localday = navday
@@ -147,99 +154,161 @@ def navigation(html, index, lastday, navday, daytuple):
         localtitle = daytuple.nextlocation
     if not lastday:
         html.write('<a href="{}.html">Next</a><br>\n'.format(localday))
-        html.write('{}<br>\n'.format(longdate(localday)))
-        html.write('{}'.format(localtitle))
-    html.write('</h6><td>\n')
+        html.write("{}<br>\n".format(longdate(localday)))
+        html.write("{}".format(localtitle))
+    html.write("</h6><td>\n")
     tableend(html)
     return
 
 
-if __name__ == '__main__':
-    '''
-    we're essentially creating a doubly linked list of days so 
+if __name__ == "__main__":
+    """
+    we're creating a doubly linked list of days so
     each day knows the date and location of the prior and next days
-    '''
+    """
     with open(CSVFILE) as csvfile:
         reader = csv.DictReader(csvfile, delimiter=",")
         trip = {}
         for day in reader:
-            trip[day['Date']] = day['Place']
+            trip[day["Date"]] = day["Place"]
         forwardcsv = {}
-        Day = namedtuple('Day', 'location previousday nextday previouslocation nextlocation')
+        Day = namedtuple(
+            "Day", "location previousday nextday previouslocation nextlocation"
+        )
         for day in trip:
             if min(trip) == day:
                 forwardcsv[day] = Day(trip[day], None, None, None, None)
             else:
-                forwardcsv[day] = Day(trip[day], previousday, None, previouslocation, None)
+                forwardcsv[day] = Day(
+                    trip[day], previousday, None, previouslocation, None
+                )
             previousday = day
             previouslocation = trip[day]
         trip = {}
         for day in reversed(forwardcsv):
             if max(forwardcsv) == day:
-                trip[day] = Day(forwardcsv[day].location, forwardcsv[day].previousday, None,
-                                forwardcsv[day].previouslocation, None)
+                trip[day] = Day(
+                    forwardcsv[day].location,
+                    forwardcsv[day].previousday,
+                    None,
+                    forwardcsv[day].previouslocation,
+                    None,
+                )
             else:
-                trip[day] = Day(forwardcsv[day].location, forwardcsv[day].previousday, nextday,
-                                forwardcsv[day].previouslocation, nextlocation)
+                trip[day] = Day(
+                    forwardcsv[day].location,
+                    forwardcsv[day].previousday,
+                    nextday,
+                    forwardcsv[day].previouslocation,
+                    nextlocation,
+                )
             nextday = day
             nextlocation = forwardcsv[day].location
-        htmlfile = BASEFOLDER + "index.html"
-        if OVERWRITE or not os.path.exists(htmlfile):
-            with open(htmlfile, 'w') as htmlhandle:
+        # create index.html
+        index_html_path = BASEFOLDER + "index.html"
+        if OVERWRITE or not os.path.exists(index_html_path):
+            with open(index_html_path, "w") as index_html:
                 for day in sorted(trip):
                     if min(trip) == day:
-                        header(htmlhandle, TITLE)
-                        navigation(htmlhandle, True, False, day, trip[day])
-                        htmlhandle.write('<br>\n')
+                        header(index_html, TITLE)
+                        navigation(index_html, True, False, day, trip[day])
+                        index_html.write("<br>\n")
                         firstday = day
                         firsttrip = trip[day]
-                    htmlhandle.write('<a href="{}.html">{} {}</a><br>\n'.format(day, longdate(day), trip[day].location))
+                    index_html.write(
+                        '<a href="{}.html">{} {}</a><br>\n'.format(
+                            day, longdate(day), trip[day].location
+                        )
+                    )
                     if max(trip) == day:
-                        htmlhandle.write('<br>\n')
-                        navigation(htmlhandle, True, False, firstday, firsttrip)
-                        footer(htmlhandle)
+                        index_html.write("<br>\n")
+                        navigation(index_html, True, False, firstday, firsttrip)
+                        footer(index_html)
         else:
-            print('{} already exists, specify overwrite'.format(htmlfile))
+            print("{} already exists, specify overwrite".format(index_html_path))
             exit(1)
+        # create each day's html
         for day in trip:
             PICSFOLDER = BASEFOLDER + day + "//*"
             picfiles = filter(os.path.isfile, glob.glob(PICSFOLDER))
             pics = []
-            htmlfile = BASEFOLDER + day + ".html"
-            if OVERWRITE or not os.path.exists(htmlfile):
+            html_file_path = BASEFOLDER + day + ".html"
+            if OVERWRITE or not os.path.exists(html_file_path):
                 for pic in picfiles:
-                    if pic.endswith(('.JPG', '.jpg', '.JPEG', '.jpeg', '.PNG', '.png', '.HEIC', '.heic')):
+                    if pic.endswith(
+                        (
+                            ".JPG",
+                            ".jpg",
+                            ".JPEG",
+                            ".jpeg",
+                            ".PNG",
+                            ".png",
+                            ".HEIC",
+                            ".heic",
+                        )
+                    ):
                         filename = os.path.basename(pic)
-                        with open(pic, 'rb') as image:
+                        with open(pic, "rb") as image:
+                            # if we can't read the exif, use the time and date of the filename instead
                             exif = exifread.process_file(image)
                             try:
-                                dt = str(exif['EXIF DateTimeOriginal'])
+                                dt = str(exif["EXIF DateTimeOriginal"])
                             except KeyError:
-                                print('no exif found for {}'.format(filename))
-                                dt = '{}'.format(
-                                    (datetime.datetime.fromtimestamp(os.path.getctime(pic)) +
-                                     datetime.timedelta(hours=VACATIONOFFSET)).strftime(
-                                        "%Y:%m:%d %H:%M:%S"))
-                            vacationtime = '{}'.format((datetime.datetime.strptime(dt, "%Y:%m:%d %H:%M:%S") +
-                                                        datetime.timedelta(0)).strftime(
-                                                    "%H:%M {} time").format(LOCATION))
-                            hometime = '{}'.format((datetime.datetime.strptime(dt, "%Y:%m:%d %H:%M:%S") +
-                                                    datetime.timedelta(hours=VACATIONOFFSET)).strftime(
-                                                    "%H:%M {} time").format(HOME))
-                            pics.append({'hometime': hometime,
-                                         'vacationtime': vacationtime,
-                                         'filename': filename})
-                with open(htmlfile, 'w') as htmlhandle:
-                    header(htmlhandle, TITLE)
-                    navigation(htmlhandle, False, max(trip) == day, day, trip[day])
-                    htmlhandle.write('<br>\n')
-                    for pic in sorted(pics, key=itemgetter('filename')):
-                        htmlhandle.write('{}{}{}\n'.format('<img alt="" style="" src="', pic['filename'], '"><br>'))
-                        htmlhandle.write('<br>\n')
-                        htmlhandle.write('{} {}<br>\n'.format(pic['vacationtime'], pic['hometime']))
-                        htmlhandle.write('<br>\n')
-                    navigation(htmlhandle, False, max(trip) == day, day, trip[day])
-                    footer(htmlhandle)
+                                print("no exif found for {}".format(filename))
+                                dt = "{}".format(
+                                    (
+                                        datetime.datetime.fromtimestamp(
+                                            os.path.getctime(pic)
+                                        )
+                                        + datetime.timedelta(hours=VACATIONOFFSET)
+                                    ).strftime("%Y:%m:%d %H:%M:%S")
+                                )
+                            vacationtime = "{}".format(
+                                (
+                                    datetime.datetime.strptime(dt, "%Y:%m:%d %H:%M:%S")
+                                    + datetime.timedelta(0)
+                                )
+                                .strftime("%H:%M {} time")
+                                .format(LOCATION)
+                            )
+                            hometime = "{}".format(
+                                (
+                                    datetime.datetime.strptime(dt, "%Y:%m:%d %H:%M:%S")
+                                    + datetime.timedelta(hours=VACATIONOFFSET)
+                                )
+                                .strftime("%H:%M {} time")
+                                .format(HOME)
+                            )
+                            pics.append(
+                                {
+                                    "hometime": hometime,
+                                    "vacationtime": vacationtime,
+                                    "filename": filename,
+                                }
+                            )
+                # create today's html with
+                # a header,
+                # top navigation,
+                # today's pictures,
+                # bottom navigation, and
+                # a footer
+                with open(html_file_path, "w") as html_file:
+                    header(html_file, TITLE)
+                    navigation(html_file, False, max(trip) == day, day, trip[day])
+                    html_file.write("<br>\n")
+                    for pic in sorted(pics, key=itemgetter("filename")):
+                        html_file.write(
+                            "{}{}{}\n".format(
+                                '<img alt="" style="" src="', pic["filename"], '"><br>'
+                            )
+                        )
+                        html_file.write("<br>\n")
+                        html_file.write(
+                            "{} {}<br>\n".format(pic["vacationtime"], pic["hometime"])
+                        )
+                        html_file.write("<br>\n")
+                    navigation(html_file, False, max(trip) == day, day, trip[day])
+                    footer(html_file)
             else:
-                print('{} already exists, specify overwrite'.format(htmlfile))
+                print("{} already exists, specify overwrite".format(html_file_path))
                 exit(1)
